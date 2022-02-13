@@ -1,19 +1,8 @@
 package main
 
-import (
-	"fmt"
-	"go_crypo_coin/blockchain"
-)
+import "go_crypo_coin/explorer"
 
 func main() {
-  chain := blockchain.GetBlockchain()
-	chain.AddBlock("Second block")
-	chain.AddBlock("Third block")
-	chain.AddBlock("Four block")
+	explorer.Start()
 
-	for _, block := range chain.AllBlocks() {
-		fmt.Printf("Data: %s\n", block.Data)
-		fmt.Printf("Hash: %s\n", block.Hash)
-		fmt.Printf("Prev Hash: %s\n", block.PrevHash)
-	}
 }
