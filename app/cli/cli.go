@@ -3,6 +3,8 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"go_crypo_coin/explorer"
+	"go_crypo_coin/rest"
 	"os"
 )
 func usage(){
@@ -26,8 +28,10 @@ func Start() {
 	switch *mode {
 	case "html":
 		fmt.Println("Start Explorer")
+		explorer.Start(*port)
 	case "rest":
 		fmt.Println("Start REST API")
+		rest.Start(*port)
 	default:
 		usage()
 	}
