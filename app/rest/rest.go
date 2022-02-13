@@ -7,6 +7,9 @@ import (
 	"go_crypo_coin/utils"
 	"log"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 var port string 
@@ -32,6 +35,10 @@ type addBlockBody struct {
 	Message string
 }
 
+type errorRepsonse struct {
+	ErrorMessage string `json:"errormessage"`
+}
+
 func documentation(rw http.ResponseWriter, r *http.Request) {
   data := []uRLDescription{
 		{
@@ -46,12 +53,11 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			Payload: "data:string",
 		},
 		{
-			URL: url("/blocks/{id}"),
+			URL: url("/blocks/{height}"),
 			Method: "GET",
 			Description: "Get Block",
 		},
 	}
-	rw.Header().Add("Content-Type", "application/json")
 
 	//hard way for render json
 	// b, err := json.Marshal(data)
@@ -65,7 +71,6 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 func blocks(rw http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		rw.Header().Add("Content-Type", "application/json")
 		json.NewEncoder(rw).Encode(blockchain.GetBlockchain().AllBlocks())
 	case "POST":
 		var addBlockBody addBlockBody
@@ -75,11 +80,35 @@ func blocks(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func block(rw http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["height"])
+	utils.HandleErr(err)
+	block, err := blockchain.GetBlockchain().GetBlock(id)
+	encoder := json.NewEncoder(rw)
+	if err == blockchain.ErrNotFound {
+		encoder.Encode(errorRepsonse{fmt.Sprint(err)})
+	}else {
+		encoder.Encode(block)
+	}
+
+}
+
+func jsonContentTypeMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request){
+		rw.Header().Add("Content-Type", "application/json")
+		next.ServeHTTP(rw, r)
+	})
+
+}
+
 func Start(aPort int) {
-	handler := http.NewServeMux()
+	handler := mux.NewRouter()
 	port = fmt.Sprintf(":%d", aPort)
-	handler.HandleFunc("/", documentation)
-	handler.HandleFunc("/blocks", blocks)
+	handler.Use(jsonContentTypeMiddleware)
+	handler.HandleFunc("/", documentation).Methods("GET")
+	handler.HandleFunc("/blocks", blocks).Methods("GET", "POST")
+	handler.HandleFunc("/blocks/{height:[0-9]+}", block).Methods("GET")
 	fmt.Printf("Listening on http://localhost%s\n", port)
 	log.Fatal(http.ListenAndServe(port, handler))
 }
