@@ -1,8 +1,11 @@
 package main
 
-import "go_crypo_coin/explorer"
+import (
+	"go_crypo_coin/explorer"
+	"go_crypo_coin/rest"
+)
 
 func main() {
-	explorer.Start()
-
+	go explorer.Start(4000)
+	rest.Start(5000)
 }
