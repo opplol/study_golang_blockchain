@@ -6,13 +6,16 @@ import (
 	"go_crypo_coin/explorer"
 	"go_crypo_coin/rest"
 	"os"
+	"runtime"
 )
-func usage(){
-		fmt.Printf("Welecome to go crypto\n")
-		fmt.Printf("Please use the floowing flags:\n\n")
-		fmt.Printf("-port=4000:  Set the PORT of the server\n")
-		fmt.Printf("-mode=rest:  Choose between 'html' and 'rest'\n")
-		os.Exit(0)
+
+func usage() {
+	fmt.Printf("Welecome to go crypto\n")
+	fmt.Printf("Please use the floowing flags:\n\n")
+	fmt.Printf("-port=4000:  Set the PORT of the server\n")
+	fmt.Printf("-mode=rest:  Choose between 'html' and 'rest'\n")
+	runtime.Goexit()
+	os.Exit(0)
 }
 func Start() {
 	if len(os.Args) == 0 {

@@ -1,0 +1,3 @@
+*.db
+.devcontainer
+__debug_bin
