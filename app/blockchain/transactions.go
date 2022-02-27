@@ -4,6 +4,7 @@ import (
 	"errors"
 	"go_crypo_coin/utils"
 	"go_crypo_coin/wallet"
+	"sync"
 	"time"
 )
 
@@ -12,10 +13,21 @@ const (
 )
 
 type mempoll struct {
-	Txs []*Tx
+	Txs map[string]*Tx
+	m   sync.Mutex
 }
 
-var Mempoll *mempoll = &mempoll{}
+var m *mempoll
+var memOnce sync.Once
+
+func Mempoll() *mempoll {
+	memOnce.Do(func() {
+		m = &mempoll{
+			Txs: make(map[string]*Tx),
+		}
+	})
+	return m
+}
 
 type Tx struct {
 	Id        string   `json:"id"`
@@ -69,7 +81,7 @@ func validate(tx *Tx) bool {
 }
 
 func isOnMemPool(UTxOut *UTxOut) bool {
-	for _, tx := range Mempoll.Txs {
+	for _, tx := range Mempoll().Txs {
 		for _, input := range tx.TxIns {
 			if input.TxID == UTxOut.TxId && input.Index == UTxOut.Index {
 				return true
@@ -153,19 +165,30 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 
 }
 
-func (m *mempoll) AddTx(to string, amount int) error {
+func (m *mempoll) AddTx(to string, amount int) (*Tx, error) {
 	tx, err := makeTx(wallet.Wallet().Address, to, amount)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	m.Txs = append(m.Txs, tx)
-	return nil
+	m.Txs[tx.Id] = tx
+	return tx, err
 }
 
 func (m *mempoll) txToConfirm() []*Tx {
 	coinbase := makeCoinbaseTx(wallet.Wallet().Address)
-	txs := m.Txs
+	var txs []*Tx
+	for _, tx := range m.Txs {
+		txs = append(txs, tx)
+	}
 	txs = append(txs, coinbase)
-	m.Txs = nil
+	m.Txs = make(map[string]*Tx)
 	return txs
+}
+
+func (m *mempoll) AddPeerTx(tx *Tx) {
+	m.m.Lock()
+	defer m.m.Unlock()
+
+	m.Txs[tx.Id] = tx
+
 }
